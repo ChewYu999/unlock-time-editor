@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Update Unlock Time</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding-top: 50px; }
+    label { display: block; margin-top: 15px; }
+    input, button { padding: 8px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Update Unlock Time</h2>
+
+  <label>GitHub Username:
+    <input id="username" placeholder="yourusername">
+  </label>
+
+  <label>Repo Name:
+    <input id="repo" placeholder="timed-access">
+  </label>
+
+  <label>GitHub Token:
+    <input id="token" placeholder="your_personal_access_token" type="password">
+  </label>
+
+  <label>New Unlock Time (ISO Format):
+    <input id="newTime" placeholder="2025-06-01T09:00:00+08:00">
+  </label>
+
+  <button onclick="updateTime()">Update Unlock Time</button>
+
+  <p id="status"></p>
+
+  <script>
+    async function updateTime() {
+      const username = document.getElementById('username').value;
+      const repo = document.getElementById('repo').value;
+      const token = document.getElementById('token').value;
+      const newTime = document.getElementById('newTime').value;
+      const status = document.getElementById('status');
+
+      const apiUrl = `https://api.github.com/repos/${username}/${repo}/contents/unlock-time.js`;
+
+      const response = await fetch(apiUrl, {
+        headers: { Authorization: `token ${token}` }
+      });
+      const data = await response.json();
+
+      const content = `// Auto-updated\nconst unlockTime = new Date("${newTime}");\n`;
+      const encoded = btoa(content);
+
+      const updateResponse = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Update unlock time",
+          content: encoded,
+          sha: data.sha
+        })
+      });
+
+      if (updateResponse.ok) {
+        status.textContent = "✅ Unlock time updated!";
+      } else {
+        const err = await updateResponse.json();
+        status.textContent = "❌ Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
